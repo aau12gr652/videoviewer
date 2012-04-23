@@ -32,3 +32,11 @@ All dependency libraries are listed below:
 * `boost` - An easy-to-use version can be found at `git://github.com/steinwurf/external-boost.git`
 * `libavformat`, `libavcodec`, `libavutil` and `libswscale` - An easy-to-use version can be found at `git://github.com/steinwurf/external-ffmpeg.git`
 * `libhollywood` - This is included as a submodule. Alternatively, it can be cloned from the repository at `git://github.com/jepkri/hollywood.git`
+
+When dependencies are set up, and the qmake build process completes succesfully, it might be desirable to untrack the videoviewer.pro file. This is done by this command:
+
+* `git update-index --assume-unchanged videoviewer.pro`
+
+This will make git ignore changes being committed to this file. To undo this, do:
+
+* `git update-index --no-assume-unchanged videoviewer.pro`
