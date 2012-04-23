@@ -5,5 +5,5 @@ Modified Qt example code, used for displaying video. Utilizes the ffmpeg provide
 
 Initialize submodules with:
 
-:: git submodule init
-:: git submodule update
+::git submodule init
+::git submodule update
