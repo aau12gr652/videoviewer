@@ -192,7 +192,8 @@ void VideoPlayer::frameChanged(const QImage &image)
 
 void VideoPlayer::setPosition(int frame)
 {
-    movie.jumpToFrame(frame);
+    qDebug("this function not implemented");
+//    movie.jumpToFrame(frame);
 }
 
 bool VideoPlayer::presentImage(const QImage &image)
