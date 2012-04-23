@@ -1,0 +1,3 @@
+[submodule "hollywood"]
+	path = hollywood
+	url = git://github.com/jepkri/hollywood.git
