@@ -48,6 +48,8 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     : QWidget(parent)
     , surface(0)
     , playButton(0)
+    , joinButton(0)
+    , openButton(0)
 {
 
 //    connect(&movie, SIGNAL(stateChanged(QMovie::MovieState)),
@@ -60,8 +62,12 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     VideoWidget *videoWidget = new VideoWidget;
     surface = videoWidget->videoSurface();
 
-    QAbstractButton *openButton = new QPushButton(tr("Open..."));
+    openButton = new QPushButton(tr("Open..."));
     connect(openButton, SIGNAL(clicked()), this, SLOT(openFile()));
+
+    joinButton = new QPushButton(tr("Join"));
+    connect(joinButton, SIGNAL(clicked()), this, SLOT(joinStream()));
+
 
     playButton = new QPushButton;
     playButton->setEnabled(false);
@@ -73,6 +79,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     QBoxLayout *controlLayout = new QHBoxLayout;
     controlLayout->setMargin(0);
     controlLayout->addWidget(openButton);
+    controlLayout->addWidget(joinButton);
     controlLayout->addWidget(playButton);
 
     QBoxLayout *layout = new QVBoxLayout;
@@ -102,7 +109,6 @@ void VideoPlayer::openFile()
         qDebug() << "videoplayer.cpp opened file" << fileName;
         surface->stop();
 
-//        movie.setFileName(fileName);
 
         int errorcode;
         vid_source = new hollywood_source;
@@ -120,25 +126,27 @@ void VideoPlayer::openFile()
 
         qDebug() << "videoplayer.cpp hollywood interface created";
 
-
+        joinButton->setEnabled(false); // disable join button
         playButton->setEnabled(true);
         playing = false;
-//        movie.jumpToFrame(0);
 //        qDebug() << "videoplayer.cpp jump to frame";
     }
 }
 
+void VideoPlayer::joinStream()
+{
+    qDebug("Joining stream..");
+
+    // Setup code for receiving from network and decoding network coding.
+    // bind signal about new avpacket to decode function
+
+    openButton->setEnabled(false);
+    vid_sink = new hollywood_sink((CodecID)13);
+    vid_sink->signal_bitmap_ready.connect( boost::bind( &VideoPlayer::convert_to_qimage_and_signal, this, _1,_2,_3,_4) );
+}
+
 void VideoPlayer::play()
 {
-//    if(!vid_source->start())
-//        qDebug("started video");
-//    boost::this_thread::sleep(boost::posix_time::milliseconds(40));
-//    vid_sink->play();
-//    qDebug("sink is running in decode thread");
-
-//    switch(playing) {
-//    case QMovie::NotRunning:
-//        movie.start();
     if(!playing)
     {
         if(!vid_source->start()) qDebug("started video");
@@ -155,14 +163,6 @@ void VideoPlayer::play()
         playing = false;
         playButton->setIcon(style()->standardIcon(QStyle::SP_MediaPlay));
     }
-//        break;
-//    case QMovie::Paused:
-//        movie.setPaused(false);
-//        break;
-//    case QMovie::Running:
-//        movie.setPaused(true);
-//        break;
-//    }
 }
 
 void VideoPlayer::movieStateChanged(QMovie::MovieState state)
@@ -184,10 +184,6 @@ void VideoPlayer::frameChanged(const QImage &image)
     // Present QImage in widget:
     presentImage(image);
 
-//    if (!presentImage(movie.currentImage())) {
-//        movie.stop();
-//        playButton->setEnabled(false);
-//    }
 }
 
 void VideoPlayer::setPosition(int frame)
@@ -198,13 +194,7 @@ void VideoPlayer::setPosition(int frame)
 
 bool VideoPlayer::presentImage(const QImage &image)
 {
-//    QImage image2(
-//                image.width(),
-//                image.height(),
-//                QImage::Format_RGB888);
-//    image2.fill(Qt::magenta);
 
-//    QVideoFrame frame(image2);
     QVideoFrame frame(image);
 
     if (!frame.isValid())

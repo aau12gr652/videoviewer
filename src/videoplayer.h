@@ -64,6 +64,7 @@ public:
     void convert_to_qimage_and_signal(int ffmpeg_pix_format, int width, int height, AVFrame* data_frame);
 
 public slots:
+    void joinStream();
     void openFile();
     void play();
 
@@ -85,6 +86,8 @@ private:
 
     QAbstractVideoSurface *surface;
     QAbstractButton *playButton;
+    QAbstractButton *joinButton;
+    QAbstractButton *openButton;
     QSlider *positionSlider;
 };
 
