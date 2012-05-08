@@ -60,6 +60,7 @@ public:
     VideoPlayer(QWidget *parent = 0);
     ~VideoPlayer();
 
+//    void test_deserialize(uint8_t* buffer_pointer, uint32_t size);
     void testsig(int i1, int i2, int i3, AVFrame* f);
     void convert_to_qimage_and_signal(int ffmpeg_pix_format, int width, int height, AVFrame* data_frame);
 

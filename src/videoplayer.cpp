@@ -58,6 +58,8 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     qRegisterMetaType<QImage>("QImage");
     connect(this, SIGNAL(new_image_ready(QImage)),this,SLOT(frameChanged(QImage)));
 
+    vid_source = 0;
+    vid_sink = 0;
 
     VideoWidget *videoWidget = new VideoWidget;
     surface = videoWidget->videoSurface();
@@ -98,6 +100,17 @@ void VideoPlayer::testsig(int format, int width, int height, AVFrame* f)
 
 VideoPlayer::~VideoPlayer()
 {
+    if (vid_sink)
+    {
+        delete vid_sink;
+        vid_sink = 0;
+    }
+    if (vid_source)
+    {
+        delete vid_source;
+        vid_source = 0;
+    }
+
 }
 
 void VideoPlayer::openFile()
@@ -109,7 +122,11 @@ void VideoPlayer::openFile()
         qDebug() << "videoplayer.cpp opened file" << fileName;
         surface->stop();
 
-
+        if (vid_source)
+        {
+            delete vid_source;
+            vid_source = 0;
+        }
         int errorcode;
         vid_source = new hollywood_source;
         errorcode = vid_source->set_file(fileName.toAscii());
@@ -119,9 +136,17 @@ void VideoPlayer::openFile()
             qWarning() << "videoplayer.cpp FAILED to initialize interface";
         }
 
+        if(vid_sink)
+        {
+            delete vid_sink;
+            vid_sink = 0;
+        }
         vid_sink = new hollywood_sink(vid_source->video_codec_id, vid_source->audio_codec_id);
 
         vid_source->signal_video_packet.connect( boost::bind( &hollywood_sink::handle_video_packet, vid_sink, _1 ) );
+
+        vid_source->serial.signal_new_buffer.connect( boost::bind( &hollywood_source::test_deserializer_signal, vid_source, _1,_2) );
+
         vid_sink->signal_bitmap_ready.connect( boost::bind( &VideoPlayer::convert_to_qimage_and_signal, this, _1,_2,_3,_4) );
 
         qDebug() << "videoplayer.cpp hollywood interface created";
@@ -132,6 +157,16 @@ void VideoPlayer::openFile()
 //        qDebug() << "videoplayer.cpp jump to frame";
     }
 }
+
+//void VideoPlayer::test_deserialize(uint8_t* buffer_pointer, uint32_t size)
+//{
+//    AVPacket packet;
+//    av_init_packet(&packet);
+//    packet.data = buffer_pointer;
+//    packet.size = size;
+
+//    vid_sink->handle_video_packet(&packet);
+//}
 
 void VideoPlayer::joinStream()
 {
@@ -150,7 +185,7 @@ void VideoPlayer::play()
     if(!playing)
     {
         if(!vid_source->start()) qDebug("started video");
-        boost::this_thread::sleep(boost::posix_time::milliseconds(40));
+        boost::this_thread::sleep(boost::posix_time::milliseconds(1));
         vid_sink->play();
         qDebug("sink is running in decode thread");
         playing = true;
