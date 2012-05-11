@@ -60,6 +60,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
 
     vid_source = 0;
     vid_sink = 0;
+    m_blockbuster = 0;
 
     VideoWidget *videoWidget = new VideoWidget;
     surface = videoWidget->videoSurface();
@@ -122,6 +123,10 @@ void VideoPlayer::openFile()
         qDebug() << "videoplayer.cpp opened file" << fileName;
         surface->stop();
 
+        if(m_blockbuster)
+            delete m_blockbuster;
+        m_blockbuster = new blockbuster(false); // false = outbound
+
         if (vid_source)
         {
             delete vid_source;
@@ -136,17 +141,24 @@ void VideoPlayer::openFile()
             qWarning() << "videoplayer.cpp FAILED to initialize interface";
         }
 
-        if(vid_sink)
+        if(vid_sink) // Create a local sink
         {
             delete vid_sink;
             vid_sink = 0;
         }
         vid_sink = new hollywood_sink(vid_source->video_codec_id, vid_source->audio_codec_id);
 
+        // Connect local sink to source
         vid_source->signal_video_packet.connect( boost::bind( &hollywood_sink::handle_video_packet, vid_sink, _1 ) );
 
-        vid_source->serial.signal_new_buffer.connect( boost::bind( &hollywood_source::test_deserializer_signal, vid_source, _1,_2) );
+        // Connect blockbuster to source
+        vid_source->signal_video_packet.connect(
+                    boost::bind( &blockbuster::prepare_for_kodo_encoder, m_blockbuster, _1));
 
+
+        //vid_source->serial.signal_new_buffer.connect( boost::bind( &hollywood_source::test_deserializer_signal, vid_source, _1,_2) );
+
+        // Connect sink to Qt frame drawing mechanism
         vid_sink->signal_bitmap_ready.connect( boost::bind( &VideoPlayer::convert_to_qimage_and_signal, this, _1,_2,_3,_4) );
 
         qDebug() << "videoplayer.cpp hollywood interface created";
@@ -176,8 +188,24 @@ void VideoPlayer::joinStream()
     // bind signal about new avpacket to decode function
 
     openButton->setEnabled(false);
+
+    qDebug("seg1?\n");
+    if (m_blockbuster)
+    {
+        delete m_blockbuster;
+    }
+    qDebug("seg2?\n");
+    m_blockbuster = new blockbuster(true); // true for inbound
+    qDebug("seg3?\n");
     vid_sink = new hollywood_sink((CodecID)13);
+    qDebug("seg4?\n");
+    m_blockbuster->signal_new_avpacket.connect( boost::bind( &hollywood_sink::handle_video_packet, vid_sink, _1 ) );
+    qDebug("seg5?\n");
+
     vid_sink->signal_bitmap_ready.connect( boost::bind( &VideoPlayer::convert_to_qimage_and_signal, this, _1,_2,_3,_4) );
+
+    m_blockbuster->connect_to_stream();
+    vid_sink->play();
 }
 
 void VideoPlayer::play()

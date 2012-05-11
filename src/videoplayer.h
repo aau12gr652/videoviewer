@@ -47,6 +47,10 @@
 #include <hollywood_source.hpp>
 #include <hollywood_sink.hpp>
 
+#include <serializer/serializer.hpp>
+#include <blockbuster/blockbuster.hpp>
+
+
 QT_BEGIN_NAMESPACE
 class QAbstractButton;
 class QAbstractVideoSurface;
@@ -84,6 +88,8 @@ private:
 
     hollywood_source *vid_source;
     hollywood_sink *vid_sink;
+    blockbuster *m_blockbuster;
+
 
     QAbstractVideoSurface *surface;
     QAbstractButton *playButton;
