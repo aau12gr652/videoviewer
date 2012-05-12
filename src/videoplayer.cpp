@@ -170,16 +170,6 @@ void VideoPlayer::openFile()
     }
 }
 
-//void VideoPlayer::test_deserialize(uint8_t* buffer_pointer, uint32_t size)
-//{
-//    AVPacket packet;
-//    av_init_packet(&packet);
-//    packet.data = buffer_pointer;
-//    packet.size = size;
-
-//    vid_sink->handle_video_packet(&packet);
-//}
-
 void VideoPlayer::joinStream()
 {
     qDebug("Joining stream..");
@@ -287,6 +277,7 @@ void VideoPlayer::convert_to_qimage_and_signal(int ffmpeg_pix_format, int width,
 {
 //    qDebug("converting to qimage");
 //    Convert to Qimage. FFmpeg pixel format is discarded -> we know that RGB24 is used, and choose the QT-version (RGB888) of this format manually.
+
     QImage image = QImage((uchar*)data_frame->data[0], width, height, data_frame->linesize[0], QImage::Format_RGB888);
     emit new_image_ready(image);
 //    emit signal with Qimage as arg. Remember to do qRegisterType<Qimage> before making signal connection.
