@@ -111,6 +111,11 @@ VideoPlayer::~VideoPlayer()
         delete vid_source;
         vid_source = 0;
     }
+    if (m_blockbuster)
+    {
+        delete m_blockbuster;
+        m_blockbuster = 0;
+    }
 
 }
 
@@ -179,19 +184,13 @@ void VideoPlayer::joinStream()
 
     openButton->setEnabled(false);
 
-    qDebug("seg1?\n");
     if (m_blockbuster)
     {
         delete m_blockbuster;
     }
-    qDebug("seg2?\n");
     m_blockbuster = new blockbuster(true); // true for inbound
-    qDebug("seg3?\n");
     vid_sink = new hollywood_sink((CodecID)13);
-    qDebug("seg4?\n");
     m_blockbuster->signal_new_avpacket.connect( boost::bind( &hollywood_sink::handle_video_packet, vid_sink, _1 ) );
-    qDebug("seg5?\n");
-
     vid_sink->signal_bitmap_ready.connect( boost::bind( &VideoPlayer::convert_to_qimage_and_signal, this, _1,_2,_3,_4) );
 
     m_blockbuster->connect_to_stream();
