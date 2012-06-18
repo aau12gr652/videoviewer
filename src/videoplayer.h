@@ -43,9 +43,13 @@
 
 #include <QtGui/QMovie>
 #include <QtGui/QWidget>
+#include <QLineEdit>
+#include <QLabel>
 
 #include <hollywood_source.hpp>
 #include <hollywood_sink.hpp>
+
+
 
 #include <serializer/serializer.hpp>
 #include <blockbuster/blockbuster.hpp>
@@ -54,7 +58,10 @@
 QT_BEGIN_NAMESPACE
 class QAbstractButton;
 class QAbstractVideoSurface;
+class QBoxLayout;
 class QSlider;
+class QSpinBox;
+class QLabel;
 QT_END_NAMESPACE
 
 class VideoPlayer : public QWidget
@@ -68,6 +75,7 @@ public:
     void testsig(int i1, int i2, int i3, AVFrame* f);
     void convert_to_qimage_and_signal(int ffmpeg_pix_format, int width, int height, AVFrame* data_frame);
 
+
 public slots:
     void joinStream();
     void openFile();
@@ -78,6 +86,10 @@ private slots:
 //    void frameChanged(int frame);
     void frameChanged(const QImage &image);
     void setPosition(int frame);
+    void set_gamma(int gamma);
+    void set_overhead(int overhead);
+    void set_loss(int loss);
+    void make_layer_boxes(int layers);
 
 signals:
     void new_image_ready(const QImage &image);
@@ -90,11 +102,19 @@ private:
     hollywood_sink *vid_sink;
     blockbuster *m_blockbuster;
 
-
+    QBoxLayout *layout;
     QAbstractVideoSurface *surface;
     QAbstractButton *playButton;
     QAbstractButton *joinButton;
     QAbstractButton *openButton;
+    QSpinBox *packetLossBox;
+    QSpinBox *gammaBox;
+
+    QBoxLayout *layerLayout;
+
+    QLabel *iframe_label;
+    QLabel *pframe_label;
+
     QSlider *positionSlider;
 };
 

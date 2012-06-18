@@ -50,6 +50,11 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     , playButton(0)
     , joinButton(0)
     , openButton(0)
+    , positionSlider(0)
+    , packetLossBox(0)
+    , iframe_label(0)
+    , pframe_label(0)
+    , layerLayout(0)
 {
 
 //    connect(&movie, SIGNAL(stateChanged(QMovie::MovieState)),
@@ -79,18 +84,32 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     connect(playButton, SIGNAL(clicked()),
             this, SLOT(play()));
 
+    gammaBox = new QSpinBox;
+    gammaBox->setRange(0,100);
+    gammaBox->setPrefix("L1: ");
+    gammaBox->setSuffix(" %");
+
+
+
     QBoxLayout *controlLayout = new QHBoxLayout;
     controlLayout->setMargin(0);
     controlLayout->addWidget(openButton);
     controlLayout->addWidget(joinButton);
     controlLayout->addWidget(playButton);
 
-    QBoxLayout *layout = new QVBoxLayout;
+//    controlLayout->addWidget(gammaBox);
+
+
+    layout = new QVBoxLayout;
     layout->addWidget(videoWidget);
     layout->addLayout(controlLayout);
 
     setLayout(layout);
+
 }
+
+
+
 
 void VideoPlayer::testsig(int format, int width, int height, AVFrame* f)
 {
@@ -171,6 +190,39 @@ void VideoPlayer::openFile()
         joinButton->setEnabled(false); // disable join button
         playButton->setEnabled(true);
         playing = false;
+
+        // Make layout
+        QBoxLayout *serverLayout = new QHBoxLayout;
+
+        iframe_label = new QLabel;
+        iframe_label->setText("I-frames: ");
+        serverLayout->addWidget(iframe_label);
+        pframe_label = new QLabel;
+        pframe_label->setText("P-frames: ");
+        serverLayout->addWidget(pframe_label);
+
+        QSpinBox *layersBox = new QSpinBox();
+        layersBox->setRange(1,10);
+        layersBox->setPrefix("Max Layers: ");
+
+        connect(layersBox,SIGNAL(valueChanged(int)),this,SLOT(make_layer_boxes(int)));
+        serverLayout->addWidget(layersBox);
+
+        QSpinBox *overheadBox = new QSpinBox();
+        overheadBox->setRange(0,200);
+        overheadBox->setPrefix("Overhead: ");
+        overheadBox->setSuffix(" %");
+        overheadBox->setSingleStep(10);
+
+        connect(overheadBox,SIGNAL(valueChanged(int)),this,SLOT(set_overhead(int)));
+        serverLayout->addWidget(overheadBox);
+
+        layout->addLayout(serverLayout);
+        layerLayout = new QHBoxLayout; // Set layout for gammaboxes
+        layout->addLayout(layerLayout);
+        layersBox->setValue(2);
+        overheadBox->setValue(50);
+
 //        qDebug() << "videoplayer.cpp jump to frame";
     }
 }
@@ -193,8 +245,29 @@ void VideoPlayer::joinStream()
     m_blockbuster->signal_new_avpacket.connect( boost::bind( &hollywood_sink::handle_video_packet, vid_sink, _1 ) );
     vid_sink->signal_bitmap_ready.connect( boost::bind( &VideoPlayer::convert_to_qimage_and_signal, this, _1,_2,_3,_4) );
 
+    // Make layout
+    QBoxLayout *joinLayout = new QHBoxLayout;
+
+    iframe_label = new QLabel;
+    iframe_label->setText("I-frames: ");
+    joinLayout->addWidget(iframe_label);
+    pframe_label = new QLabel;
+    pframe_label->setText("P-frames: ");
+    joinLayout->addWidget(pframe_label);
+    packetLossBox = new QSpinBox;
+    packetLossBox->setRange(0,100);
+    packetLossBox->setPrefix("Loss: ");
+    packetLossBox->setSuffix(" %");
+    packetLossBox->setSingleStep(5);
+    connect(packetLossBox,SIGNAL(valueChanged(int)),this,SLOT(set_loss(int)));
+
+    joinLayout->addWidget(packetLossBox);
+    layout->addLayout(joinLayout);
+
     m_blockbuster->connect_to_stream();
     vid_sink->play();
+
+
 }
 
 void VideoPlayer::play()
@@ -272,6 +345,58 @@ bool VideoPlayer::presentImage(const QImage &image)
     }
 }
 
+
+void VideoPlayer::make_layer_boxes(int layers) { // CREATING GAMMA SPINBOXES
+
+    m_blockbuster->number_of_layers = layers;
+
+//    if(layerLayout) {
+//        qDebug("removing shit!");
+//        layout->removeItem(layerLayout);
+//        delete layerLayout;
+//        layerLayout = 0;
+//    }
+//    QList<QSpinBox> AllSpinBoxes = layerLayout->findChildren<QSpinBox *>();
+
+    QLayoutItem *child;
+    while((child = layerLayout->takeAt(0)) != 0) {
+        delete child->widget();
+        delete child;
+    }
+
+    for (int i=1;i<layers;i++)
+    {
+        QSpinBox *gammaBox = new QSpinBox();
+        gammaBox->setRange(0,100);
+        QString str = QString();
+        str.sprintf("L%d: ",i);
+        gammaBox->setPrefix(str);
+        gammaBox->setSuffix(" %");
+        gammaBox->setSingleStep(5);
+        gammaBox->setProperty("layer", QVariant::fromValue(i-1));
+        connect(gammaBox,SIGNAL(valueChanged(int)), this,SLOT(set_gamma(int)) );
+
+        layerLayout->addWidget(gammaBox);
+    }
+//    layerLayout->setSpacing(2);
+}
+
+void VideoPlayer::set_gamma(int gamma) { // SLOT TO SET GAMMA TO LAYERS
+    int layer = qvariant_cast<int>(sender()->property("layer"));
+    qDebug() << "setting gamma " << gamma << " to layer " << layer;
+    m_blockbuster->gamma[layer] = gamma;
+}
+
+void VideoPlayer::set_overhead(int overhead) {
+    m_blockbuster->overhead_percentage = overhead;
+}
+
+void VideoPlayer::set_loss(int loss) {
+    m_blockbuster->benjamin_krebs->postDanmarkFactor = loss;
+}
+
+
+
 void VideoPlayer::convert_to_qimage_and_signal(int ffmpeg_pix_format, int width, int height, AVFrame* data_frame)
 {
 //    qDebug("converting to qimage");
@@ -280,4 +405,15 @@ void VideoPlayer::convert_to_qimage_and_signal(int ffmpeg_pix_format, int width,
     QImage image = QImage((uchar*)data_frame->data[0], width, height, data_frame->linesize[0], QImage::Format_RGB888);
     emit new_image_ready(image);
 //    emit signal with Qimage as arg. Remember to do qRegisterType<Qimage> before making signal connection.
+
+    // Bad code: Piggyback functions about number of frames here:
+    QString pframe_info = QString();
+    pframe_info.sprintf("P-frames: %d",m_blockbuster->m_serializer->Pframes);
+    pframe_label->setText(pframe_info);
+
+    QString iframe_info = QString();
+    iframe_info.sprintf("I-frames: %d",m_blockbuster->m_serializer->Iframes);
+    iframe_label->setText(iframe_info);
+
+
 }
