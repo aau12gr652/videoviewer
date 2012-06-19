@@ -55,6 +55,7 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     , iframe_label(0)
     , pframe_label(0)
     , layerLayout(0)
+    , packet_label(0)
 {
 
 //    connect(&movie, SIGNAL(stateChanged(QMovie::MovieState)),
@@ -195,11 +196,14 @@ void VideoPlayer::openFile()
         QBoxLayout *serverLayout = new QHBoxLayout;
 
         iframe_label = new QLabel;
-        iframe_label->setText("I-frames: ");
+        iframe_label->setText("I-frames:   ");
         serverLayout->addWidget(iframe_label);
         pframe_label = new QLabel;
-        pframe_label->setText("P-frames: ");
+        pframe_label->setText("P-frames:   ");
         serverLayout->addWidget(pframe_label);
+        packet_label = new QLabel;
+        packet_label->setText("Packets:   ");
+        serverLayout->addWidget(packet_label);
 
         QSpinBox *layersBox = new QSpinBox();
         layersBox->setRange(1,10);
@@ -254,6 +258,9 @@ void VideoPlayer::joinStream()
     pframe_label = new QLabel;
     pframe_label->setText("P-frames: ");
     joinLayout->addWidget(pframe_label);
+    packet_label = new QLabel;
+    packet_label->setText("Packets:   ");
+    joinLayout->addWidget(packet_label);
     packetLossBox = new QSpinBox;
     packetLossBox->setRange(0,100);
     packetLossBox->setPrefix("Loss: ");
@@ -388,6 +395,7 @@ void VideoPlayer::set_gamma(int gamma) { // SLOT TO SET GAMMA TO LAYERS
 }
 
 void VideoPlayer::set_overhead(int overhead) {
+    qDebug() << "Setting overhead to " << overhead;
     m_blockbuster->overhead_percentage = overhead;
 }
 
@@ -406,7 +414,7 @@ void VideoPlayer::convert_to_qimage_and_signal(int ffmpeg_pix_format, int width,
     emit new_image_ready(image);
 //    emit signal with Qimage as arg. Remember to do qRegisterType<Qimage> before making signal connection.
 
-    // Bad code: Piggyback functions about number of frames here:
+    // Bad code: Piggyback functions about number of frames and packets here:
     QString pframe_info = QString();
     pframe_info.sprintf("P-frames: %d",m_blockbuster->m_serializer->Pframes);
     pframe_label->setText(pframe_info);
@@ -415,5 +423,7 @@ void VideoPlayer::convert_to_qimage_and_signal(int ffmpeg_pix_format, int width,
     iframe_info.sprintf("I-frames: %d",m_blockbuster->m_serializer->Iframes);
     iframe_label->setText(iframe_info);
 
-
+    QString packet_info = QString();
+    packet_info.sprintf("Packets: %d", m_blockbuster->benjamin_krebs->packets);
+    packet_label->setText(packet_info);
 }

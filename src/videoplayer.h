@@ -114,6 +114,7 @@ private:
 
     QLabel *iframe_label;
     QLabel *pframe_label;
+    QLabel *packet_label;
 
     QSlider *positionSlider;
 };
