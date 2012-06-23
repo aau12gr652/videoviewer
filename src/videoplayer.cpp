@@ -90,13 +90,17 @@ VideoPlayer::VideoPlayer(QWidget *parent)
     gammaBox->setPrefix("L1: ");
     gammaBox->setSuffix(" %");
 
-
+    portBox = new QSpinBox;
+    portBox->setRange(11000,11099);
+    portBox->setPrefix("Port: ");
+    portBox->setValue(11000);
 
     QBoxLayout *controlLayout = new QHBoxLayout;
     controlLayout->setMargin(0);
     controlLayout->addWidget(openButton);
     controlLayout->addWidget(joinButton);
     controlLayout->addWidget(playButton);
+    controlLayout->addWidget(portBox);
 
 //    controlLayout->addWidget(gammaBox);
 
@@ -150,8 +154,7 @@ void VideoPlayer::openFile()
 
         if(m_blockbuster)
             delete m_blockbuster;
-        m_blockbuster = new blockbuster(false); // false = outbound
-
+        m_blockbuster = new blockbuster(false,portBox->value()); // false = outbound
         if (vid_source)
         {
             delete vid_source;
@@ -244,7 +247,7 @@ void VideoPlayer::joinStream()
     {
         delete m_blockbuster;
     }
-    m_blockbuster = new blockbuster(true); // true for inbound
+    m_blockbuster = new blockbuster(true,portBox->value()); // true for inbound
     vid_sink = new hollywood_sink((CodecID)13);
     m_blockbuster->signal_new_avpacket.connect( boost::bind( &hollywood_sink::handle_video_packet, vid_sink, _1 ) );
     vid_sink->signal_bitmap_ready.connect( boost::bind( &VideoPlayer::convert_to_qimage_and_signal, this, _1,_2,_3,_4) );

@@ -109,6 +109,7 @@ private:
     QAbstractButton *openButton;
     QSpinBox *packetLossBox;
     QSpinBox *gammaBox;
+    QSpinBox *portBox;
 
     QBoxLayout *layerLayout;
 
